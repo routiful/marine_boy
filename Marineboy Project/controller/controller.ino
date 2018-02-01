@@ -23,6 +23,14 @@
 #define JOY_MAX       200
 #define JOY_MIN       50
 
+#define PS3_CONTROL_PERIOD  20
+#define CART_CONTROL_PERIOD 20
+
+#define WHEEL_PROFILE_VELOCITY 15
+
+#define	MAX(x,y) ((x) > (y) ? (x) : (y))	
+#define	MIN(x,y) ((x) < (y) ? (x) : (y))	
+
 typedef struct
 {
   int16_t maximum;
@@ -55,6 +63,8 @@ uint8_t control_mode = 0;
 
 bool is_connect = FALSE;
 
+static uint32_t tTime[2];
+
 void setup() 
 {
   Serial.begin(115200);
@@ -72,54 +82,62 @@ void setup()
 
 void loop() 
 {
-  PS3TaskOn();
+  uint32_t t = millis();
 
-  if (PS3Available())
+  PS3TaskOn();  
+
+  if ((t-tTime[0]) >= (1000 / PS3_CONTROL_PERIOD))
   {
-    is_connect = TRUE;
+    if (PS3Available())
+    {    
+      is_connect = TRUE;
 
-    connectSign();
+      connectSign();
 
-    // PS3Print();
-
-    if (PS3GetBtn(SELECT))
-    {
-      select_mode++;    
-      control_mode = select_mode % 3;
-
-      if (control_mode == CART)
+      // PS3Print();
+      if (PS3GetBtn(SELECT))
       {
-        PS3LedOff();
-        PS3LedOn(LED1);
+        select_mode++;    
+        control_mode = select_mode % 3;
+
+        if (control_mode == CART)
+        {
+          PS3LedOff();
+          PS3LedOn(LED1);
+        }
+        else if (control_mode == NECK)
+        {
+          PS3LedOff();
+          PS3LedOn(LED2);
+        }
+        else if (control_mode == ARM)
+        {
+          PS3LedOff();
+          PS3LedOn(LED3);
+        }
       }
-      else if (control_mode == NECK)
-      {
-        PS3LedOff();
-        PS3LedOn(LED2);
-      }
-      else if (control_mode == ARM)
-      {
-        PS3LedOff();
-        PS3LedOn(LED3);
-      }
+      tTime[0] = t;
     }
-
-    delay(50);
-  }
+  } 
 
   OPMRun();
-
   controlGrandma();  
 }
 
 void controlGrandma()
 {
+  uint32_t t = millis();
+
   if (is_connect)
   {
     switch(control_mode)
     {
       case CART:
-        CartMove();
+        if ((t-tTime[1]) >= (1000 / CART_CONTROL_PERIOD))
+        {
+          CartMove();
+          tTime[1] = t;
+        }          
        break;
 
       case NECK:
@@ -192,7 +210,7 @@ void WheelBegin()
 void wristCtrlInit()
 {
   wrist_ctrl.goal = 90;
-  wrist_ctrl.unit = 5;
+  wrist_ctrl.unit = 10;
   wrist_ctrl.limit.maximum = 180;
   wrist_ctrl.limit.minimum = 0;
 }
@@ -274,20 +292,29 @@ void checkLimitSpeedOfWheel()
 
 void WheelMove()
 {
+  static int32_t control_speed = 0;
+
   wheelBtnCtrl();
   checkLimitSpeedOfWheel();
 
-  if (wheel_ctrl.goal > 0)
-    left_wheel.move(wheel_ctrl.goal, FORWARD);
+  if (wheel_ctrl.goal > control_speed)
+    control_speed = MIN(wheel_ctrl.goal, control_speed + WHEEL_PROFILE_VELOCITY);
+  else if (wheel_ctrl.goal < control_speed)
+    control_speed = MAX(wheel_ctrl.goal, control_speed - WHEEL_PROFILE_VELOCITY);
   else
-    left_wheel.move((-1) * wheel_ctrl.goal, BACKWARD);
+    control_speed = wheel_ctrl.goal;
+
+  if (control_speed > 0)
+    left_wheel.move(control_speed, FORWARD);
+  else
+    left_wheel.move((-1) * control_speed, BACKWARD);
 }
 
 void wristBtnCtrl()
 {
-  if (PS3GetBtn(RIGHT))
+  if (PS3GetBtn(CIRCLE))
     wrist_ctrl.goal = wrist_ctrl.goal + wrist_ctrl.unit;
-  else if (PS3GetBtn(LEFT))
+  else if (PS3GetBtn(SQUARE))
     wrist_ctrl.goal = wrist_ctrl.goal - wrist_ctrl.unit;
   else if (PS3GetBtn(TRIANGLE))
     wrist_ctrl.goal = 90; // degree
@@ -398,6 +425,7 @@ void ARMMove()
 
     setJointAngle(target_pos);
     move(0.16);
+    Serial.println("aa");
   }
   else if (PS3GetJoy(LeftHatY) > JOY_MAX)
   {
@@ -408,6 +436,7 @@ void ARMMove()
 
     setJointAngle(target_pos);
     move(0.16);
+    Serial.println("bb");
   }
   // else if (rcData & RC100_BTN_L)
   // {
@@ -453,7 +482,17 @@ void ARMMove()
   //   setJointAngle(target_pos);
   //   move(0.16);
   // }
-  else if (PS3GetBtn(L2))
+
+  else if (PS3GetBtn(L1))
+  {
+    setTorque(TRUE);
+    getAngle();
+  }
+  else if (PS3GetBtn(R1))
+  {
+    setTorque(FALSE);
+  }
+  else if (PS3GetBtn(TRIANGLE))
   {
     target_pos[1] =  0.0;
     target_pos[2] =  0.0;
@@ -461,9 +500,9 @@ void ARMMove()
     target_pos[4] =  0.0;
 
     setJointAngle(target_pos);
-    move(1.0);
+    move(2.0);
   }
-  else if (PS3GetBtn(L1))
+  else if (PS3GetBtn(CROSS))
   {
     target_pos[1] =  0.0;
     target_pos[2] =  95.0 * PI/180.0;
@@ -471,6 +510,6 @@ void ARMMove()
     target_pos[4] =  20.0 * PI/180.0;
 
     setJointAngle(target_pos);
-    move(1.0);
+    move(2.0);
   }
 }

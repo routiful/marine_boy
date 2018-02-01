@@ -11,11 +11,10 @@
     drv_pwm_setup(pwm_pin_);
   }
 
-  void Servo::write(uint8_t deg)
+  void Servo::write(uint32_t deg)
   {
-    uint32_t res = 10;
-    uint32_t duty = 0;
+    uint32_t res = RESOLUTION;
 
-    duty = map(deg, 0, 180, 51, 102);
+    uint32_t duty = map(deg, 0, 180, SERVO_ZERO, SERVO_PI);
     drv_pwm_set_duty(pwm_pin_, res, duty);
   }
