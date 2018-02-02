@@ -8,6 +8,8 @@
 #include <OpenManipulator.h>
 #include "ARM.h"
 
+#include <RC100.h>
+
 #define SERVO_PWM_PIN 3
 #define MOTOR_PWM_PIN 5
 
@@ -24,6 +26,7 @@
 #define JOY_MIN       50
 
 #define PS3_CONTROL_PERIOD  20
+#define NECK_CONTROL_PERIOD 20
 #define CART_CONTROL_PERIOD 20
 
 #define WHEEL_PROFILE_VELOCITY 15
@@ -63,7 +66,10 @@ uint8_t control_mode = 0;
 
 bool is_connect = FALSE;
 
-static uint32_t tTime[2];
+static uint32_t tTime[5];
+
+RC100 Controller;
+int rcData = 0;
 
 void setup() 
 {
@@ -83,7 +89,6 @@ void setup()
 void loop() 
 {
   uint32_t t = millis();
-
   PS3TaskOn();  
 
   if ((t-tTime[0]) >= (1000 / PS3_CONTROL_PERIOD))
@@ -116,9 +121,9 @@ void loop()
           PS3LedOn(LED3);
         }
       }
-      tTime[0] = t;
     }
-  } 
+    tTime[0] = t;
+  }
 
   OPMRun();
   controlGrandma();  
@@ -141,7 +146,11 @@ void controlGrandma()
        break;
 
       case NECK:
+      if ((t-tTime[2]) >= (1000 / NECK_CONTROL_PERIOD))
+      {
         NECKMove();
+        tTime[2] = t;
+      }
        break;
 
       case ARM:
@@ -223,14 +232,14 @@ void WristBegin()
 
 void ARMBegin()
 {
-  const bool processing = false;
-  const bool dynamixel  = true;
-  const bool torque     = false;
+  const bool processing = FALSE;
+  const bool dynamixel  = TRUE;
+  const bool torque     = FALSE;
 
   initArm();
   OPMInit(arm, LINK_NUM, processing, dynamixel, torque);
 
-  setTorque(true);
+  setTorque(TRUE);
 }
 
 void neckCtrlInit()
@@ -414,102 +423,101 @@ void NECKMove()
 
 void ARMMove()
 {
+  uint32_t t = millis();
   static float target_pos[LINK_NUM] = {0.0, };
 
-  if (PS3GetJoy(LeftHatY) < JOY_MIN)
-  {    
-    inverseKinematics(arm, GRIP, setPose("forward"), "position");  
-    
-    for (int i = JOINT1; i < GRIP; i++)
-      target_pos[i] = arm[i].joint_angle_;
-
-    setJointAngle(target_pos);
-    move(0.16);
-    Serial.println("aa");
-  }
-  else if (PS3GetJoy(LeftHatY) > JOY_MAX)
+  if ((t-tTime[3]) >= (1000 / PS3_CONTROL_PERIOD))
   {
-    inverseKinematics(arm, GRIP, setPose("back"), "position");  
+    if (PS3GetJoy(LeftHatY) < JOY_MIN)
+    {    
+      inverseKinematics(arm, GRIP, setPose("forward"), "position");  
+      
+      for (int i = JOINT1; i < GRIP; i++)
+        target_pos[i] = arm[i].joint_angle_;
 
-    for (int i = JOINT1; i < GRIP; i++)
-      target_pos[i] = arm[i].joint_angle_;
+      setJointAngle(target_pos);
+      move(0.16);
+    }
+    else if (PS3GetJoy(LeftHatY) > JOY_MAX)
+    {
+      inverseKinematics(arm, GRIP, setPose("back"), "position");  
 
-    setJointAngle(target_pos);
-    move(0.16);
-    Serial.println("bb");
-  }
-  // else if (rcData & RC100_BTN_L)
-  // {
-  //   inverseKinematics(arm, GRIP, setPose("left"), "position");  
+      for (int i = JOINT1; i < GRIP; i++)
+        target_pos[i] = arm[i].joint_angle_;
 
-  //   for (int i = JOINT1; i < GRIP; i++)
-  //     target_pos[i] = arm[i].joint_angle_;
+      setJointAngle(target_pos);
+      move(0.16);
+    }
+    else if (PS3GetJoy(LeftHatX) < JOY_MIN)
+    {
+      inverseKinematics(arm, GRIP, setPose("left"), "position");  
 
-  //   setJointAngle(target_pos);
-  //   move(0.16);
-  // }
-  // else if (rcData & RC100_BTN_R)
-  // {
-  //   inverseKinematics(arm, GRIP, setPose("right"), "position");  
+      for (int i = JOINT1; i < GRIP; i++)
+        target_pos[i] = arm[i].joint_angle_;
 
-  //   for (int i = JOINT1; i < GRIP; i++)
-  //     target_pos[i] = arm[i].joint_angle_;
+      setJointAngle(target_pos);
+      move(0.16);
+    }
+    else if (PS3GetJoy(LeftHatX) > JOY_MAX)
+    {
+      inverseKinematics(arm, GRIP, setPose("right"), "position");  
 
-  //   setJointAngle(target_pos);
-  //   move(0.16);
-  // }
-  // else if (rcData & RC100_BTN_1)
-  // {
-  //   inverseKinematics(arm, GRIP, setPose("up"), "position");  
+      for (int i = JOINT1; i < GRIP; i++)
+        target_pos[i] = arm[i].joint_angle_;
 
-  //   for (int i = JOINT1; i < GRIP; i++)
-  //     target_pos[i] = arm[i].joint_angle_;
+      setJointAngle(target_pos);
+      move(0.16);
+    }
+    else if (PS3GetJoy(RightHatY) < JOY_MIN)
+    {
+      inverseKinematics(arm, GRIP, setPose("up"), "position");  
 
-  //   setJointAngle(target_pos);
-  //   move(0.16);
-  // }
-  // else if (rcData & RC100_BTN_2)
-  // {
-  //   setCurrentPos(findMe("Gripper"), grip_on);
-  // }
-  // else if (rcData & RC100_BTN_3)
-  // {
-  //   inverseKinematics(arm, GRIP, setPose("down"), "position");  
+      for (int i = JOINT1; i < GRIP; i++)
+        target_pos[i] = arm[i].joint_angle_;
 
-  //   for (int i = JOINT1; i < GRIP; i++)
-  //     target_pos[i] = arm[i].joint_angle_;
+      setJointAngle(target_pos);
+      move(0.16);
+    }
+    else if (PS3GetJoy(RightHatY) > JOY_MAX)
+    {
+      inverseKinematics(arm, GRIP, setPose("down"), "position");  
 
-  //   setJointAngle(target_pos);
-  //   move(0.16);
-  // }
+      for (int i = JOINT1; i < GRIP; i++)
+        target_pos[i] = arm[i].joint_angle_;
 
-  else if (PS3GetBtn(L1))
-  {
-    setTorque(TRUE);
-    getAngle();
-  }
-  else if (PS3GetBtn(R1))
-  {
-    setTorque(FALSE);
-  }
-  else if (PS3GetBtn(TRIANGLE))
-  {
-    target_pos[1] =  0.0;
-    target_pos[2] =  0.0;
-    target_pos[3] =  0.0;
-    target_pos[4] =  0.0;
+      setJointAngle(target_pos);
+      move(0.16);
+    }
+    else if (PS3GetBtn(L1))
+    {
+      setTorque(TRUE);
+      getAngle();
+    }
+    else if (PS3GetBtn(R1))
+    {
+      setTorque(FALSE);
+    }
+    else if (PS3GetBtn(TRIANGLE))
+    {
+      target_pos[1] =  0.0;
+      target_pos[2] =  0.0;
+      target_pos[3] =  0.0;
+      target_pos[4] =  0.0;
 
-    setJointAngle(target_pos);
-    move(2.0);
-  }
-  else if (PS3GetBtn(CROSS))
-  {
-    target_pos[1] =  0.0;
-    target_pos[2] =  95.0 * PI/180.0;
-    target_pos[3] = -75.0 * PI/180.0;
-    target_pos[4] =  20.0 * PI/180.0;
+      setJointAngle(target_pos);
+      move(2.0);
+    }
+    else if (PS3GetBtn(CROSS))
+    {
+      target_pos[1] =  0.0;
+      target_pos[2] =  95.0 * PI/180.0;
+      target_pos[3] = -75.0 * PI/180.0;
+      target_pos[4] =  20.0 * PI/180.0;
 
-    setJointAngle(target_pos);
-    move(2.0);
+      setJointAngle(target_pos);
+      move(2.0);
+    }
+
+    tTime[3] = t;
   }
 }
