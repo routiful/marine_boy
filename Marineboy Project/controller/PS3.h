@@ -14,6 +14,7 @@
 
 
 void PS3Begin();
+void PS3End();
 void PS3TaskOn();
 bool PS3Available();
 

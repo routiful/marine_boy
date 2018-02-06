@@ -17,6 +17,11 @@ void PS3Begin()
   Serial.print(F("\r\nPS3 Bluetooth Library Started"));
 }
 
+void PS3End()
+{
+  PS3.disconnect();
+}
+
 void PS3TaskOn()
 {
   Usb.Task();
@@ -45,9 +50,9 @@ uint8_t PS3GetBtn(ButtonEnum btn)
 void PS3Rumble(bool onoff)
 {
   if (onoff)
-    PS3.setRumbleOn(RumbleLow);
-  else
     PS3.setRumbleOn(RumbleHigh);
+  else
+    PS3.setRumbleOff();
 }
 
 void PS3LedOn(LEDEnum led)

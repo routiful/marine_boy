@@ -8,8 +8,6 @@
 #include <OpenManipulator.h>
 #include "ARM.h"
 
-#include <RC100.h>
-
 #define SERVO_PWM_PIN 3
 #define MOTOR_PWM_PIN 5
 
@@ -68,13 +66,10 @@ bool is_connect = FALSE;
 
 static uint32_t tTime[5];
 
-RC100 Controller;
-int rcData = 0;
-
 void setup() 
 {
   Serial.begin(115200);
-  while (!Serial);
+  // while (!Serial);
 
   PS3Begin();
   NECKBegin();
@@ -121,6 +116,11 @@ void loop()
           PS3LedOn(LED3);
         }
       }
+
+      if (PS3GetBtn(START)) 
+      {
+        PS3End();
+      }
     }
     tTime[0] = t;
   }
@@ -161,6 +161,13 @@ void controlGrandma()
        break;
     }
   }
+}
+
+void limitSign()
+{
+  PS3Rumble(true);
+  delay(5);
+  PS3Rumble(false);
 }
 
 void connectSign()
@@ -293,10 +300,16 @@ void wheelBtnCtrl()
 
 void checkLimitSpeedOfWheel()
 {
-  if (wheel_ctrl.goal >= wheel_ctrl.limit.maximum)
+  if (wheel_ctrl.goal > wheel_ctrl.limit.maximum)
+  {
+    //limitSign();
     wheel_ctrl.goal = wheel_ctrl.limit.maximum;
-  else if (wheel_ctrl.goal <= wheel_ctrl.limit.minimum)
+  }
+  else if (wheel_ctrl.goal < wheel_ctrl.limit.minimum)
+  {
+    //limitSign();
     wheel_ctrl.goal = wheel_ctrl.limit.minimum;
+  }
 }
 
 void WheelMove()
@@ -332,9 +345,15 @@ void wristBtnCtrl()
 void checkLimitPositionOfWrist()
 {
   if (wrist_ctrl.goal >= wrist_ctrl.limit.maximum)
+  {
+    //limitSign();
     wrist_ctrl.goal = wrist_ctrl.limit.maximum;
+  }
   else if (wrist_ctrl.goal <= wrist_ctrl.limit.minimum)
+  {
+    //limitSign();
     wrist_ctrl.goal = wrist_ctrl.limit.minimum;
+  }
 }
 
 void WristMove()
@@ -361,14 +380,14 @@ void setNeckPositionUnit()
 
 void neckBtnCtrl()
 {
-  if (PS3GetJoy(RightHatX) > JOY_MAX)
+  if (PS3GetJoy(LeftHatX) > JOY_MAX)
     neck_ctrl.yaw.goal = neck_ctrl.yaw.goal - neck_ctrl.yaw.unit;
-  else if (PS3GetJoy(RightHatX) < JOY_MIN)
+  else if (PS3GetJoy(LeftHatX) < JOY_MIN)
     neck_ctrl.yaw.goal = neck_ctrl.yaw.goal + neck_ctrl.yaw.unit;
 
-  if (PS3GetJoy(LeftHatX) > JOY_MAX)
+  if (PS3GetJoy(RightHatX) > JOY_MAX)
     neck_ctrl.roll.goal = neck_ctrl.roll.goal - neck_ctrl.roll.unit;
-  else if (PS3GetJoy(LeftHatX) < JOY_MIN)
+  else if (PS3GetJoy(RightHatX) < JOY_MIN)
     neck_ctrl.roll.goal = neck_ctrl.roll.goal + neck_ctrl.roll.unit;
 
   if (PS3GetJoy(LeftHatY) > JOY_MAX)
@@ -379,20 +398,38 @@ void neckBtnCtrl()
 
 void checkLimitPositionOfNeck()
 {
-  if (neck_ctrl.yaw.goal <= neck_ctrl.yaw.limit.minimum)
-    neck_ctrl.yaw.goal = neck_ctrl.yaw.limit.minimum;
-  else if (neck_ctrl.yaw.goal >= neck_ctrl.yaw.limit.maximum)
+  if (neck_ctrl.yaw.goal < neck_ctrl.yaw.limit.minimum)
+  {
+    //limitSign();
+    neck_ctrl.yaw.goal = neck_ctrl.yaw.limit.minimum;    
+  }
+  else if (neck_ctrl.yaw.goal > neck_ctrl.yaw.limit.maximum)
+  {
+    //limitSign();
     neck_ctrl.yaw.goal = neck_ctrl.yaw.limit.maximum;
+  }
 
   if (neck_ctrl.roll.goal <= neck_ctrl.roll.limit.minimum)
+  {
+    //limitSign();
     neck_ctrl.roll.goal = neck_ctrl.roll.limit.minimum;
+  }
   else if (neck_ctrl.roll.goal >= neck_ctrl.roll.limit.maximum)
+  {
+    //limitSign();
     neck_ctrl.roll.goal = neck_ctrl.roll.limit.maximum;
+  }
 
   if (neck_ctrl.pitch.goal <= neck_ctrl.pitch.limit.minimum)
+  {
+    //limitSign();
     neck_ctrl.pitch.goal = neck_ctrl.pitch.limit.minimum;
+  }
   else if (neck_ctrl.pitch.goal >= neck_ctrl.pitch.limit.maximum)
+  {
+    //limitSign();
     neck_ctrl.pitch.goal = neck_ctrl.pitch.limit.maximum;
+  }
 }
 
 void checkInitPositionOfNeck()
@@ -448,7 +485,8 @@ void ARMMove()
       setJointAngle(target_pos);
       move(0.16);
     }
-    else if (PS3GetJoy(LeftHatX) < JOY_MIN)
+    
+    if (PS3GetJoy(LeftHatX) < JOY_MIN)
     {
       inverseKinematics(arm, GRIP, setPose("left"), "position");  
 
@@ -468,7 +506,8 @@ void ARMMove()
       setJointAngle(target_pos);
       move(0.16);
     }
-    else if (PS3GetJoy(RightHatY) < JOY_MIN)
+    
+    if (PS3GetJoy(RightHatY) < JOY_MIN)
     {
       inverseKinematics(arm, GRIP, setPose("up"), "position");  
 
@@ -488,7 +527,25 @@ void ARMMove()
       setJointAngle(target_pos);
       move(0.16);
     }
-    else if (PS3GetBtn(L1))
+    
+    if (PS3GetJoy(RightHatX) > JOY_MAX)
+    {
+
+      target_pos[4] += (3.0 * DEG2RAD);
+
+      setJointAngle(target_pos);
+      move(0.1);
+    }
+    else if (PS3GetJoy(RightHatX) < JOY_MIN)
+    {
+
+      target_pos[4] -= (3.0 * DEG2RAD);
+
+      setJointAngle(target_pos);
+      move(0.1);
+    }
+    
+    if (PS3GetBtn(L1))
     {
       setTorque(TRUE);
       getAngle();
@@ -509,10 +566,10 @@ void ARMMove()
     }
     else if (PS3GetBtn(CROSS))
     {
-      target_pos[1] =  0.0;
-      target_pos[2] =  95.0 * PI/180.0;
-      target_pos[3] = -75.0 * PI/180.0;
-      target_pos[4] =  20.0 * PI/180.0;
+      target_pos[1] = -0.76;
+      target_pos[2] =  0.51;
+      target_pos[3] =  0.07;
+      target_pos[4] =  0.0;
 
       setJointAngle(target_pos);
       move(2.0);

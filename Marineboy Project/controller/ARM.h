@@ -55,8 +55,8 @@ void initArm()
   arm[JOINT1].joint_angle_             = 0.0;
   arm[JOINT1].joint_vel_               = 0.0;
   arm[JOINT1].joint_acc_               = 0.0;
-  arm[JOINT1].joint_axis_              << 0, 0, 1;
-  arm[JOINT1].joint_pos_               << 0.012, 0, 0.036;
+  arm[JOINT1].joint_axis_              << 0, -1, 0;
+  arm[JOINT1].joint_pos_               << 0.0, -0.0465, 0.0;
 
   arm[JOINT2].name_                    = "Joint2";
   arm[JOINT2].me_                      = JOINT2;
@@ -68,8 +68,8 @@ void initArm()
   arm[JOINT2].joint_angle_             = 0.0;
   arm[JOINT2].joint_vel_               = 0.0;
   arm[JOINT2].joint_acc_               = 0.0;
-  arm[JOINT2].joint_axis_              << 0, -1, 0;
-  arm[JOINT2].joint_pos_               << 0, 0, 0.040;
+  arm[JOINT2].joint_axis_              << 0, 0, 1;
+  arm[JOINT2].joint_pos_               << 0, -0.0515, 0.0;
 
   arm[JOINT3].name_                    = "Joint3";
   arm[JOINT3].me_                      = JOINT3;
@@ -81,8 +81,8 @@ void initArm()
   arm[JOINT3].joint_angle_             = 0.0;
   arm[JOINT3].joint_vel_               = 0.0;
   arm[JOINT3].joint_acc_               = 0.0;
-  arm[JOINT3].joint_axis_              << 0, -1, 0;
-  arm[JOINT3].joint_pos_               << 0.022, 0, 0.122;
+  arm[JOINT3].joint_axis_              << 0, -0.390, 0.920;
+  arm[JOINT3].joint_pos_               << 0.0, -0.1198, -0.1264;
 
   arm[JOINT4].name_                    = "Joint4";
   arm[JOINT4].me_                      = JOINT4;
@@ -94,8 +94,8 @@ void initArm()
   arm[JOINT4].joint_angle_             = 0.0;
   arm[JOINT4].joint_vel_               = 0.0;
   arm[JOINT4].joint_acc_               = 0.0;
-  arm[JOINT4].joint_axis_              << 0, -1, 0;
-  arm[JOINT4].joint_pos_               << 0.124, 0, 0;
+  arm[JOINT4].joint_axis_              << 1, 0, 0;
+  arm[JOINT4].joint_pos_               << 0.064, 0, 0;
 
   arm[GRIP].name_                      = "Gripper";
   arm[GRIP].me_                        = GRIP;
@@ -108,7 +108,7 @@ void initArm()
   arm[GRIP].joint_vel_                 = 0.0;
   arm[GRIP].joint_acc_                 = 0.0;
   arm[GRIP].joint_axis_                = Eigen::Vector3f::Zero();
-  arm[GRIP].joint_pos_                 << 0.119, 0, 0;
+  arm[GRIP].joint_pos_                 << 0.106, 0, 0;
 }
 
 #endif //OPENMANIPULATOR_CHAIN_H_
