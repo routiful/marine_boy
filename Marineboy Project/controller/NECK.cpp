@@ -7,7 +7,7 @@ static uint8_t dxl_cnt = NECK_MOTOR_COUNT;
 
 void NECKBegin(uint32_t baud)
 {
-  dxl_wb.begin("/dev/ttyUSB0", baud);
+  dxl_wb.begin("", baud);
   
   for (int cnt = 0; cnt < NECK_MOTOR_COUNT; cnt++)
   {

@@ -15,6 +15,6 @@
   {
     uint32_t res = RESOLUTION;
 
-    uint32_t duty = map(deg, 0, 180, SERVO_ZERO, SERVO_PI);
+    uint32_t duty = map(deg, 0, 720, SERVO_ZERO, SERVO_PI);
     drv_pwm_set_duty(pwm_pin_, res, duty);
   }
