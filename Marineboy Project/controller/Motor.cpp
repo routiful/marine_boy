@@ -14,16 +14,16 @@
     pinMode(dir_pin_, OUTPUT);
   }
 
-  void Motor::move(uint32_t vel, uint8_t dir)
+  void Motor::move(uint32_t duty, uint8_t dir)
   {
     uint32_t res = 10;
-    uint32_t goal_vel = 0;
+    uint32_t goal_duty = 0;
 
     if (dir == FORWARD)
       digitalWrite(dir_pin_, HIGH);
     else if (dir == BACKWARD)
       digitalWrite(dir_pin_, LOW);
 
-    goal_vel = map(vel, 0, 1000, 0, 1024);
-    drv_pwm_set_duty(pwm_pin_, res, goal_vel);
+    goal_duty = map(duty, 0, 2000, 0, 1024);
+    drv_pwm_set_duty(pwm_pin_, res, goal_duty);
   }
