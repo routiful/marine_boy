@@ -311,7 +311,7 @@ void HoldCart()
 {
   left_wheel.move(0, FORWARD);
   right_wheel.move(0, FORWARD);
-  // leg.move(0, FORWARD);
+  leg_ctrl.goal = 0;
 
   wrist.write(90);
 }
@@ -396,28 +396,28 @@ void WheelMove()
 {
   wheelJoyCtrl(); 
 
-  controlled_goal[LEFT] = getSimpleProfile(controlled_goal[LEFT], left_wheel_ctrl.goal, WHEEL_PROFILE_VELOCITY);
-  controlled_goal[RIGHT] = getSimpleProfile(controlled_goal[RIGHT], right_wheel_ctrl.goal, WHEEL_PROFILE_VELOCITY);
+  //controlled_goal[LEFT] = getSimpleProfile(controlled_goal[LEFT], left_wheel_ctrl.goal, WHEEL_PROFILE_VELOCITY);
+  //controlled_goal[RIGHT] = getSimpleProfile(controlled_goal[RIGHT], right_wheel_ctrl.goal, WHEEL_PROFILE_VELOCITY);
 
-  if (controlled_goal[0] < 0 && controlled_goal[1] > 0)
+  if (left_wheel_ctrl.goal < 0 && right_wheel_ctrl.goal > 0)
   {
-    left_wheel.move((-1) * controlled_goal[0], BACKWARD);
-    right_wheel.move(controlled_goal[1], FORWARD);
+    left_wheel.move((-1) * left_wheel_ctrl.goal, BACKWARD);
+    right_wheel.move(right_wheel_ctrl.goal, FORWARD);
   }
-  else if (controlled_goal[0] > 0 && controlled_goal[1] < 0)
+  else if (left_wheel_ctrl.goal > 0 && right_wheel_ctrl.goal < 0)
   {
-    left_wheel.move(controlled_goal[0], FORWARD);
-    right_wheel.move((-1) * controlled_goal[1], BACKWARD);
+    left_wheel.move(left_wheel_ctrl.goal, FORWARD);
+    right_wheel.move((-1) * right_wheel_ctrl.goal, BACKWARD);
   }
-  else if (controlled_goal[0] < 0 && controlled_goal[1] < 0)
+  else if (left_wheel_ctrl.goal < 0 && right_wheel_ctrl.goal < 0)
   {
-    left_wheel.move((-1) * controlled_goal[0], BACKWARD);
-    right_wheel.move((-1) * controlled_goal[1], BACKWARD);
+    left_wheel.move((-1) * left_wheel_ctrl.goal, BACKWARD);
+    right_wheel.move((-1) * right_wheel_ctrl.goal, BACKWARD);
   }
   else
   {
-    left_wheel.move(controlled_goal[0], FORWARD);
-    right_wheel.move(controlled_goal[1], FORWARD);
+    left_wheel.move(left_wheel_ctrl.goal, FORWARD);
+    right_wheel.move(right_wheel_ctrl.goal, FORWARD);
   }
 }
 
@@ -431,7 +431,7 @@ void LegMove()
 
   // controlled_leg = getSimpleProfile(controlled_leg, leg_ctrl.goal, LEG_PROFILE_VELOCITY);
 
-  if (leg_ctrl.goal > 0)
+  if (leg_ctrl.goal >= 0)
     digitalWrite(LEG_MOTOR_DIR_PIN, HIGH);
   else
     digitalWrite(LEG_MOTOR_DIR_PIN, LOW);
@@ -562,6 +562,7 @@ void ArmMove()
     {
       setTorque(FALSE);
     }
+    // Add Arm Motion
     else if (PS3GetBtn(TRIANGLE))
     {
       target_pos[1] =  0.0;
