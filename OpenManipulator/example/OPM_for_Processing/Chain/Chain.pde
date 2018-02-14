@@ -493,7 +493,7 @@ class ChildApplet extends PApplet
              ;
 
     gripper = cp5.addKnob("gripper")
-                .setRange(0.0, 1.5)
+                .setRange(-1.0, 0.7)
                 .setValue(0.0)
                 .setPosition(210,260)
                 .setRadius(50)
@@ -833,13 +833,13 @@ class ChildApplet extends PApplet
     {
       if (flag)
       {
-        gripper.setValue(1.3);
+        gripper.setValue(0.3);
         opencr_port.write("grip"  + ',' +
                           "on" + '\n');
       }
       else
       {
-        gripper.setValue(0.0);
+        gripper.setValue(-1.0);
         opencr_port.write("grip"  + ',' +
                           "off" + '\n');
       }

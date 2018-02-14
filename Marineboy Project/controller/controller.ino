@@ -33,8 +33,10 @@
 #define JOY_MIN       50
 
 #define PS3_CONTROL_PERIOD  200 //5ms
-#define NECK_CONTROL_PERIOD 2   //5us
+
+#define NECK_CONTROL_PERIOD 50  //50ms
 #define CART_CONTROL_PERIOD 5   //5ms
+#define ARM_CONTROL_PERIOD  20  //50ms
 
 #define WHEEL_PROFILE_VELOCITY 2
 #define LEG_PROFILE_VELOCITY 2
@@ -81,7 +83,7 @@ uint8_t control_mode = 0;
 
 bool is_connect = FALSE;
 
-static uint32_t tTime[10];
+static uint64_t tTime[10];
 
 void setup() 
 {
@@ -96,7 +98,7 @@ void setup()
   LegBegin();
   WristBegin();
   NECKBegin();
-  // ARMBegin();
+  ARMBegin();
 
   HoldGrandMa();
   HoldCart();
@@ -142,7 +144,7 @@ void loop()
 
 void controlGrandma()
 {
-  uint32_t t = micros();
+  uint64_t t = micros();
 
   if (is_connect)
   {
@@ -163,7 +165,7 @@ void controlGrandma()
        break;
 
       case ARM:
-        // ArmMove();
+        ArmMove();
        break;
 
       default:
@@ -313,7 +315,7 @@ void HoldCart()
   right_wheel.move(0, FORWARD);
   leg_ctrl.goal = 0;
 
-  wrist.write(90);
+  wrist.write(360);
 }
 
 /*////////////////////////////////////////////////////
@@ -346,19 +348,24 @@ void legJoyCtrl()
 
 void wristJoyCtrl()
 {
-  uint16_t get_y_hat = map(PS3GetJoy(LeftHatX), 0, 255, 0, 720);
+  uint16_t get_y_hat = map(PS3GetJoy(LeftHatX), 0, 255, 240, 480);  //0 ~ 720 -> -90 ~ 90
 
   wrist_ctrl.goal = get_y_hat;
 }
 
 void neckJoyCtrl()
 {
-  int32_t get_x_hat = map(PS3GetJoy(RightHatX), 0, 255, neck_ctrl.yaw.limit.maximum, neck_ctrl.yaw.limit.minimum); 
-  int32_t get_y_hat = map(PS3GetJoy(RightHatY), 0, 255, neck_ctrl.pitch.limit.maximum, neck_ctrl.pitch.limit.minimum);
+  int32_t get_x_hat = constrain(PS3GetJoy(RightHatX), 0, 255);
+  int32_t get_y_hat = constrain(PS3GetJoy(RightHatY), 0, 255);
 
-  int32_t get_L2    = map(PS3GetAnalogBtn(L2),  0, 255, 0, neck_ctrl.roll.limit.minimum);
-  int32_t get_R2    = map(PS3GetAnalogBtn(R2),  0, 255, 0, neck_ctrl.roll.limit.maximum); 
+  int32_t get_L2 = constrain(PS3GetAnalogBtn(L2), 0, 255); 
+  int32_t get_R2 = constrain(PS3GetAnalogBtn(R2), 0, 255); 
 
+  get_x_hat = map(get_x_hat, 255, 0, neck_ctrl.yaw.limit.minimum, neck_ctrl.yaw.limit.maximum); 
+  get_y_hat = map(get_y_hat, 0, 255, neck_ctrl.pitch.limit.minimum, neck_ctrl.pitch.limit.maximum);
+
+  get_L2    = map(PS3GetAnalogBtn(R2),  0, 255, 0, neck_ctrl.roll.limit.minimum);
+  get_R2    = map(PS3GetAnalogBtn(L2),  0, 255, 0, neck_ctrl.roll.limit.maximum); 
 
   neck_ctrl.roll.goal  = 2048 + (get_L2 + get_R2);
   neck_ctrl.pitch.goal = get_y_hat;
@@ -432,9 +439,9 @@ void LegMove()
   // controlled_leg = getSimpleProfile(controlled_leg, leg_ctrl.goal, LEG_PROFILE_VELOCITY);
 
   if (leg_ctrl.goal >= 0)
-    digitalWrite(LEG_MOTOR_DIR_PIN, HIGH);
-  else
     digitalWrite(LEG_MOTOR_DIR_PIN, LOW);
+  else
+    digitalWrite(LEG_MOTOR_DIR_PIN, HIGH);
 
   leg_ctrl.goal = map(abs(leg_ctrl.goal), 0, 2000, 0, 1024);
 
@@ -471,7 +478,7 @@ void ArmMove()
   uint32_t t = millis();
   static float target_pos[LINK_NUM] = {0.0, };
 
-  if ((t-tTime[3]) >= (1000 / PS3_CONTROL_PERIOD))
+  if ((t-tTime[3]) >= (1000 / ARM_CONTROL_PERIOD))
   {
     if (PS3GetJoy(LeftHatY) < JOY_MIN)
     {    

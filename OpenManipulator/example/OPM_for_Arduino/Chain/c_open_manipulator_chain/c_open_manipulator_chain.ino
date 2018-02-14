@@ -18,8 +18,10 @@ String cmd[5];
 bool motion    = false;
 bool repeat    = false;
 
-const float grip_on  = 1.3;
-const float grip_off = 0.0;
+const float grip_on  = 0.7;
+const float grip_off = -1.0;
+
+float grip_pose = 0.0;
 
 uint8_t motion_cnt = 0;
 uint8_t motion_num = 0;
@@ -227,7 +229,11 @@ void dataFromRC100(uint16_t receive_data)
   }
   else if (receive_data & RC100_BTN_2)
   {
-    setGripAngle(grip_on);
+    grip_pose = grip_pose + 0.1;
+
+    grip_pose = constrain(grip_pose, grip_off, grip_on);
+
+    setGripAngle(grip_pose);
     move(1.5);
   }
   else if (receive_data & RC100_BTN_3)
@@ -242,7 +248,10 @@ void dataFromRC100(uint16_t receive_data)
   }
   else if (receive_data & RC100_BTN_4)
   {
-    setGripAngle(grip_off);
+    grip_pose = grip_pose - 0.1;
+
+    grip_pose = constrain(grip_pose, grip_off, grip_on);
+    setGripAngle(grip_pose);
     move(1.5);
   }
   else if (receive_data & RC100_BTN_5)

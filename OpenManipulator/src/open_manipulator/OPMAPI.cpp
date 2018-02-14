@@ -27,6 +27,7 @@ int8_t copy_link_num;
 OPMDynamixel dxl;
 OPMKinematics km;
 OPMMinimumJerk mj;
+OPMMath math;
 
 State state[STORAGE] = {{0.0, 0.0, 0.0}, };
 Position pos[STORAGE] = {{0.0, 0.0}, };
@@ -145,6 +146,7 @@ Pose setPose(String dir)
 {
   Pose target_pose;
   float step = 0.010;
+  // float angle = 3.0 * DEG2RAD;
 
   for (int i = findMe("BASE"); i <= findMe("Gripper"); i++)
     copy_link[i].joint_angle_ = pos[i].present;
@@ -157,7 +159,7 @@ Pose setPose(String dir)
   if (dir == "forward")
   {
     target_pose.position(0) += step;
-  }
+  }  
   else if (dir == "back")
   {
     target_pose.position(0) -= step;
@@ -178,6 +180,16 @@ Pose setPose(String dir)
   {
     target_pose.position(2) -= step;
   }
+  
+  // if (dir == "roll_cw")
+  // {
+  //   target_pose.orientation = math.RotationMatrix("roll", angle) * target_pose.orientation; 
+  // }
+
+  // if (dir == "roll_ccw")
+  // {
+  //   target_pose.orientation = math.RotationMatrix("roll", -angle) * target_pose.orientation; 
+  // }
   
   return target_pose;
 }
