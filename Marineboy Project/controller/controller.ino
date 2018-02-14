@@ -10,6 +10,12 @@
 
 // #define DEBUG
 
+#define SET_WRIST_MIN_ANGLE -30
+#define SET_WRIST_MAX_ANGLE 30
+
+#define NECK_VEL 20
+#define NECK_ACC 100
+
 #define SERVO_PWM_PIN       3
 
 #define LEFT_MOTOR_PWM_PIN  5
@@ -97,7 +103,7 @@ void setup()
   WheelBegin();
   LegBegin();
   WristBegin();
-  NECKBegin();
+  NECKBegin(NECK_VEL, NECK_ACC);
   ARMBegin();
 
   HoldGrandMa();
@@ -315,7 +321,9 @@ void HoldCart()
   right_wheel.move(0, FORWARD);
   leg_ctrl.goal = 0;
 
-  wrist.write(360);
+  uint16_t init_angle = 90;
+  init_angle = map(init_angle, -90, 90, 0, 720);
+  wrist.write(init_angle);
 }
 
 /*////////////////////////////////////////////////////
@@ -348,7 +356,13 @@ void legJoyCtrl()
 
 void wristJoyCtrl()
 {
-  uint16_t get_y_hat = map(PS3GetJoy(LeftHatX), 0, 255, 240, 480);  //0 ~ 720 -> -90 ~ 90
+  int16_t set_min_angle = SET_WRIST_MIN_ANGLE;
+  int16_t set_max_angle = SET_WRIST_MAX_ANGLE;
+
+  set_min_angle = map(set_min_angle, -90, 90, 0, 720);
+  set_max_angle = map(set_max_angle, -90, 90, 0, 720);
+
+  uint16_t get_y_hat = map(PS3GetJoy(LeftHatX), 0, 255, set_min_angle, set_max_angle);
 
   wrist_ctrl.goal = get_y_hat;
 }
