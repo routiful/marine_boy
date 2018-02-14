@@ -10,11 +10,18 @@
 
 // #define DEBUG
 
+////////////////////////////////////////////////////////////////////////
+
 #define SET_WRIST_MIN_ANGLE -30
 #define SET_WRIST_MAX_ANGLE 30
 
 #define NECK_VEL 20
 #define NECK_ACC 100
+
+#define PAL_MOK_ANGLE 10.0
+#define PAL_MOK_TIME 1
+
+////////////////////////////////////////////////////////////////////////
 
 #define SERVO_PWM_PIN       3
 
@@ -27,7 +34,7 @@
 #define LEG_MOTOR_DIR_PIN   A0
 
 #define CART          0
-#define ARM           1
+#define GRANDMA       1
 
 #define TRUE          1
 #define FALSE         0
@@ -134,7 +141,7 @@ void loop()
           PS3LedOff();
           PS3LedOn(LED1);
         }
-        else if (control_mode == ARM)
+        else if (control_mode == GRANDMA)
         {
           PS3LedOff();
           PS3LedOn(LED2);
@@ -170,8 +177,14 @@ void controlGrandma()
         }        
        break;
 
-      case ARM:
+      case GRANDMA:
         ArmMove();
+
+        if ((t-tTime[2]) >= (1000 * NECK_CONTROL_PERIOD))
+        {
+          NeckMove();
+          tTime[2] = t;
+        }  
        break;
 
       default:
@@ -378,8 +391,15 @@ void neckJoyCtrl()
   get_x_hat = map(get_x_hat, 255, 0, neck_ctrl.yaw.limit.minimum, neck_ctrl.yaw.limit.maximum); 
   get_y_hat = map(get_y_hat, 0, 255, neck_ctrl.pitch.limit.minimum, neck_ctrl.pitch.limit.maximum);
 
-  get_L2    = map(PS3GetAnalogBtn(R2),  0, 255, 0, neck_ctrl.roll.limit.minimum);
-  get_R2    = map(PS3GetAnalogBtn(L2),  0, 255, 0, neck_ctrl.roll.limit.maximum); 
+  if (control_mode == CART)
+  {
+    get_R2    = map(PS3GetAnalogBtn(R2),  0, 255, 0, neck_ctrl.roll.limit.minimum);
+    get_L2    = map(PS3GetAnalogBtn(L2),  0, 255, 0, neck_ctrl.roll.limit.maximum); 
+  }
+  else
+  {
+    get_R2 = 0; get_L2 = 0;
+  }
 
   neck_ctrl.roll.goal  = 2048 + (get_L2 + get_R2);
   neck_ctrl.pitch.goal = get_y_hat;
@@ -536,7 +556,7 @@ void ArmMove()
       move(0.16);
     }
     
-    if (PS3GetJoy(RightHatY) < JOY_MIN)
+    if (PS3GetAnalogBtn(R2) > JOY_MAX)
     {
       inverseKinematics(arm, GRIP, setPose("up"), "position");  
 
@@ -546,7 +566,7 @@ void ArmMove()
       setJointAngle(target_pos);
       move(0.16);
     }
-    else if (PS3GetJoy(RightHatY) > JOY_MAX)
+    else if (PS3GetAnalogBtn(L2) > JOY_MAX)
     {
       inverseKinematics(arm, GRIP, setPose("down"), "position");  
 
@@ -557,29 +577,27 @@ void ArmMove()
       move(0.16);
     }
     
-    if (PS3GetJoy(RightHatX) > JOY_MAX)
+    if (PS3GetBtn(R1))
     {
-
-      target_pos[4] += (3.0 * DEG2RAD);
+      target_pos[4] += (PAL_MOK_ANGLE * DEG2RAD);
 
       setJointAngle(target_pos);
-      move(0.1);
+      move(PAL_MOK_TIME);
     }
-    else if (PS3GetJoy(RightHatX) < JOY_MIN)
+    else if (PS3GetBtn(L1))
     {
-
-      target_pos[4] -= (3.0 * DEG2RAD);
+      target_pos[4] -= (PAL_MOK_ANGLE * DEG2RAD);
 
       setJointAngle(target_pos);
-      move(0.1);
+      move(PAL_MOK_TIME);
     }
     
-    if (PS3GetBtn(L1))
+    if (PS3GetBtn(UP))
     {
       setTorque(TRUE);
       getAngle();
     }
-    else if (PS3GetBtn(R1))
+    else if (PS3GetBtn(DOWN))
     {
       setTorque(FALSE);
     }
@@ -596,9 +614,9 @@ void ArmMove()
     }
     else if (PS3GetBtn(CROSS))
     {
-      target_pos[1] = -0.76;
-      target_pos[2] =  0.51;
-      target_pos[3] =  0.07;
+      target_pos[1] = -0.0;
+      target_pos[2] =  0.0;
+      target_pos[3] =  0.0;
       target_pos[4] =  0.0;
 
       setJointAngle(target_pos);
