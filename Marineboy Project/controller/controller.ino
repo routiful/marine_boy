@@ -1,3 +1,14 @@
+/*
+//
+//
+//  고물수레 프로젝트 v1.0
+//  Artist : Marine Boy
+//  Software Engineer : Darby Lim (ROBOTIS)
+//  Hardware Engineer : Dorian Kim (ROBOTIS)
+//
+//
+*/
+
 #include "PS3.h"
 #include "SERVO.h"
 #include "Motor.h"
@@ -8,7 +19,7 @@
 #include <OpenManipulator.h>
 #include "ARM.h"
 
-// #define DEBUG
+#define DEBUG
 
 ////////////////////////////////////////////////////////////////////////
 
