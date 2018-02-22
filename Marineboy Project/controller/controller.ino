@@ -121,11 +121,11 @@ void setup()
   WheelBegin();
   LegBegin();
   WristBegin();
-  NECKBegin(NECK_VEL, NECK_ACC);
-  ARMBegin();
+  // NECKBegin(NECK_VEL, NECK_ACC);
+  // ARMBegin();
 
-  HoldGrandMa();
-  HoldCart();
+  // HoldGrandMa();
+  // HoldCart();
 }
 
 void loop() 
@@ -183,7 +183,7 @@ void controlGrandma()
 
         if ((t-tTime[2]) >= (1000 * NECK_CONTROL_PERIOD))
         {
-          NeckMove();
+          // NeckMove();
           tTime[2] = t;
         }        
        break;
@@ -386,7 +386,14 @@ void wristJoyCtrl()
   set_min_angle = map(set_min_angle, -90, 90, 0, 720);
   set_max_angle = map(set_max_angle, -90, 90, 0, 720);
 
-  uint16_t get_y_hat = map(PS3GetJoy(LeftHatX), 0, 255, set_min_angle, set_max_angle);
+  uint16_t get_y_hat = 0;
+
+  int8_t get_grandma_dir = map(PS3GetJoy(LeftHatY), 0, 255, 127, -127); 
+
+  if (get_grandma_dir > 0)
+    get_y_hat = map(PS3GetJoy(LeftHatX), 0, 255, set_min_angle, set_max_angle);
+  else if (get_grandma_dir <= 0)
+    get_y_hat = map(PS3GetJoy(LeftHatX), 0, 255, set_max_angle, set_min_angle);
 
   wrist_ctrl.goal = get_y_hat;
 }

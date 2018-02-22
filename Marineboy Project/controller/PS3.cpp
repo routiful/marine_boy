@@ -6,8 +6,8 @@ static USB Usb;
 static BTD Btd(&Usb); // You have to create the Bluetooth Dongle instance like so
 /* You can create the instance of the class in two ways */
 //PS3BT PS3(&Btd); // This will just create the instance
-// static PS3BT PS3(&Btd, 0x00, 0x19, 0x86, 0x00, 0x20, 0xDD); // This will also store the bluetooth address - this can be obtained from the dongle when running the sketch
-PS3BT PS3(&Btd, 0x00, 0x19, 0x86, 0x00, 0x21, 0xF3); // This will also store the bluetooth address - this can be obtained from the dongle when running the sketch
+static PS3BT PS3(&Btd, 0x00, 0x19, 0x86, 0x00, 0x20, 0xDD); // This will also store the bluetooth address - this can be obtained from the dongle when running the sketch
+// PS3BT PS3(&Btd, 0x00, 0x19, 0x86, 0x00, 0x21, 0xF3); // This will also store the bluetooth address - this can be obtained from the dongle when running the sketch
 
 void PS3Begin()
 {
