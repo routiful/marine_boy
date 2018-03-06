@@ -1,7 +1,7 @@
 /*
 //
 //
-//  고물수레 프로젝트 v1.0
+//  고물수레 프로젝트 v1.2
 //  Artist : Marine Boy
 //  Software Engineer : Darby Lim (ROBOTIS)
 //  Hardware Engineer : Dorian Kim (ROBOTIS)
@@ -19,13 +19,12 @@
 #include <OpenManipulator.h>
 #include "ARM.h"
 
-#define DEBUG
-
+//#define DEBUG 
 ////////////////////////////////////////////////////////////////////////
 
-#define SET_WRIST_MIN_ANGLE -30
-#define SET_WRIST_MAX_ANGLE 30
-
+#define SET_WRIST_MIN_ANGLE -50
+#define SET_WRIST_MAX_ANGLE 50
+// 죄측 -50 , 우측 30 몸통회전 각도 
 #define NECK_VEL 20
 #define NECK_ACC 100
 
@@ -44,8 +43,15 @@
 #define RIGHT_MOTOR_DIR_PIN 7
 #define LEG_MOTOR_DIR_PIN   A0
 
+#define HORN_SIG_PIN             A2
+#define LINEAR_FORWARD_SIG_PIN   A3
+#define LINEAR_BACKWARD_SIG_PIN  A4
+#define TV_SIG_PIN               A5
+#define IMAGE_SIG_PIN             2
+
 #define CART          0
 #define GRANDMA       1
+#define ETC           2
 
 #define TRUE          1
 #define FALSE         0
@@ -61,6 +67,7 @@
 #define NECK_CONTROL_PERIOD 50  //50ms
 #define CART_CONTROL_PERIOD 5   //5ms
 #define ARM_CONTROL_PERIOD  20  //50ms
+#define ETC_CONTROL_PERIOD  50  //50ms
 
 #define WHEEL_PROFILE_VELOCITY 2
 #define LEG_PROFILE_VELOCITY 2
@@ -121,11 +128,12 @@ void setup()
   WheelBegin();
   LegBegin();
   WristBegin();
-  // NECKBegin(NECK_VEL, NECK_ACC);
-  // ARMBegin();
+  NECKBegin(NECK_VEL, NECK_ACC);
+  ARMBegin();
+  ETCBegin();
 
-  // HoldGrandMa();
-  // HoldCart();
+  HoldGrandMa();
+  HoldCart();
 }
 
 void loop() 
@@ -145,7 +153,7 @@ void loop()
       if (PS3GetBtn(SELECT))
       {
         select_mode++;    
-        control_mode = select_mode % 2;
+        control_mode = select_mode % 3;
 
         if (control_mode == CART)
         {
@@ -156,6 +164,11 @@ void loop()
         {
           PS3LedOff();
           PS3LedOn(LED2);
+        }
+        else if (control_mode == ETC)
+        {
+          PS3LedOff();
+          PS3LedOn(LED3);
         }
       }
     }
@@ -183,7 +196,7 @@ void controlGrandma()
 
         if ((t-tTime[2]) >= (1000 * NECK_CONTROL_PERIOD))
         {
-          // NeckMove();
+          NeckMove();
           tTime[2] = t;
         }        
        break;
@@ -195,6 +208,20 @@ void controlGrandma()
         {
           NeckMove();
           tTime[2] = t;
+        }  
+       break;
+
+      case ETC:
+        if ((t-tTime[2]) >= (1000 * NECK_CONTROL_PERIOD))
+        {
+          NeckMove();
+          tTime[2] = t;
+        }  
+
+        if ((t-tTime[4]) >= (1000 * ETC_CONTROL_PERIOD))
+        {
+          etcJoyCtrl();
+          tTime[4] = t;
         }  
        break;
 
@@ -261,15 +288,15 @@ void wheelCtrlInit()
 void legCtrlInit()
 {
   leg_ctrl.goal = 0;
-  leg_ctrl.limit.maximum = 2000;
-  leg_ctrl.limit.minimum = -2000;
+  leg_ctrl.limit.maximum = 590;
+  leg_ctrl.limit.minimum = -590;
 }
 
 void wristCtrlInit()
 {
   wrist_ctrl.goal = 90;
-  wrist_ctrl.limit.maximum = 180;
-  wrist_ctrl.limit.minimum = 0;
+  wrist_ctrl.limit.maximum = 135;
+  wrist_ctrl.limit.minimum = 45;
 }
 
 void neckCtrlInit()
@@ -324,6 +351,15 @@ void ARMBegin()
   OPMInit(arm, LINK_NUM, processing, dynamixel, torque);
 
   setTorque(TRUE);
+}
+
+void ETCBegin()
+{
+  pinMode(HORN_SIG_PIN, OUTPUT);
+  pinMode(LINEAR_FORWARD_SIG_PIN, OUTPUT);
+  pinMode(LINEAR_BACKWARD_SIG_PIN, OUTPUT);
+  pinMode(TV_SIG_PIN, OUTPUT);
+  pinMode(IMAGE_SIG_PIN, OUTPUT);
 }
 
 /*////////////////////////////////////////////////////
@@ -424,6 +460,40 @@ void neckJoyCtrl()
   neck_ctrl.yaw.goal   = get_x_hat;
 }
 
+void etcJoyCtrl()
+{
+  static bool cross_btn_state  = false;
+  static bool circle_btn_state = false;
+
+  if (PS3GetBtn(UP))
+    digitalWrite(HORN_SIG_PIN, HIGH);
+  else
+    digitalWrite(HORN_SIG_PIN, LOW);
+
+  if (PS3GetBtn(LEFT))
+    digitalWrite(LINEAR_FORWARD_SIG_PIN, HIGH);
+  else
+    digitalWrite(LINEAR_FORWARD_SIG_PIN, LOW);
+
+  if (PS3GetBtn(RIGHT))
+    digitalWrite(LINEAR_BACKWARD_SIG_PIN, HIGH);
+  else
+    digitalWrite(LINEAR_BACKWARD_SIG_PIN, LOW);
+
+  if (PS3GetBtn(CROSS)) {cross_btn_state = !cross_btn_state;}
+  if (PS3GetBtn(CIRCLE) {circle_btn_state = !circle_btn_state;}
+
+  if (cross_btn_state == false)
+    digitalWrite(TV_SIG_PIN, LOW);
+  else
+    digitalWrite(TV_SIG_PIN, HIGH);
+
+  if (circle_btn_state == false)
+    digitalWrite(IMAGE_SIG_PIN, LOW);
+  else
+    digitalWrite(IMAGE_SIG_PIN, HIGH);
+}
+
 /*////////////////////////////////////////////////////
 @ Simple profile
 /*////////////////////////////////////////////////////
@@ -451,12 +521,13 @@ void CartMove()
   LegMove();
 }
 
+
 void WheelMove()
 {
   wheelJoyCtrl(); 
 
-  //controlled_goal[LEFT] = getSimpleProfile(controlled_goal[LEFT], left_wheel_ctrl.goal, WHEEL_PROFILE_VELOCITY);
-  //controlled_goal[RIGHT] = getSimpleProfile(controlled_goal[RIGHT], right_wheel_ctrl.goal, WHEEL_PROFILE_VELOCITY);
+  controlled_goal[LEFT] = getSimpleProfile(controlled_goal[LEFT], left_wheel_ctrl.goal, WHEEL_PROFILE_VELOCITY);
+  controlled_goal[RIGHT] = getSimpleProfile(controlled_goal[RIGHT], right_wheel_ctrl.goal, WHEEL_PROFILE_VELOCITY);
 
   if (left_wheel_ctrl.goal < 0 && right_wheel_ctrl.goal > 0)
   {
@@ -478,6 +549,47 @@ void WheelMove()
     left_wheel.move(left_wheel_ctrl.goal, FORWARD);
     right_wheel.move(right_wheel_ctrl.goal, FORWARD);
   }
+
+//  if (left_wheel_ctrl.goal < 0 && right_wheel_ctrl.goal > 0)
+//  {
+//    left_wheel.move((-1) * left_wheel_ctrl.goal, BACKWARD);
+//    right_wheel.move(right_wheel_ctrl.goal, FORWARD);
+//  }
+//  else if (left_wheel_ctrl.goal > 0 && right_wheel_ctrl.goal < 0)
+//  {
+//    left_wheel.move(left_wheel_ctrl.goal, FORWARD);
+//    right_wheel.move((-1) * right_wheel_ctrl.goal, BACKWARD);
+//  }
+//  else if (left_wheel_ctrl.goal < 0 && right_wheel_ctrl.goal < 0)
+//  {
+//    left_wheel.move((-1) * left_wheel_ctrl.goal, BACKWARD);
+//    right_wheel.move((-1) * right_wheel_ctrl.goal, BACKWARD);
+//  }
+//  else
+//  {
+//    left_wheel.move(left_wheel_ctrl.goal, FORWARD);
+//    right_wheel.move(right_wheel_ctrl.goal, FORWARD);
+//  }
+//  if (left_wheel_ctrl.goal < 0 && right_wheel_ctrl.goal > 0)
+//  {
+//    left_wheel.move((-1) * left_wheel_ctrl.goal, BACKWARD);
+//    right_wheel.move(right_wheel_ctrl.goal, FORWARD);
+//  }
+//  else if (left_wheel_ctrl.goal > 0 && right_wheel_ctrl.goal < 0)
+//  {
+//    left_wheel.move(left_wheel_ctrl.goal, FORWARD);
+//    right_wheel.move((-1) * right_wheel_ctrl.goal, BACKWARD);
+//  }
+//  else if (left_wheel_ctrl.goal < 0 && right_wheel_ctrl.goal < 0)
+//  {
+//    left_wheel.move((-1) * left_wheel_ctrl.goal, BACKWARD);
+//    right_wheel.move((-1) * right_wheel_ctrl.goal, BACKWARD);
+//  }
+//  else
+//  {
+//    left_wheel.move(left_wheel_ctrl.goal, FORWARD);
+//    right_wheel.move(right_wheel_ctrl.goal, FORWARD);
+//  }
 }
 
 void LegMove()
@@ -632,10 +744,40 @@ void ArmMove()
     }
     else if (PS3GetBtn(CROSS))
     {
-      target_pos[1] = -0.0;
-      target_pos[2] =  0.0;
-      target_pos[3] =  0.0;
-      target_pos[4] =  0.0;
+      target_pos[1] =  1.62;
+      target_pos[2] =  0.79;
+      target_pos[3] = -1.50;
+      target_pos[4] = -0.50;
+
+      setJointAngle(target_pos);
+      move(2.0);
+    }
+    else if (PS3GetBtn(CIRCLE))
+    {
+      target_pos[1] =  1.44;
+      target_pos[2] =  1.43;
+      target_pos[3] = -0.33;
+      target_pos[4] = -0.23;
+
+      setJointAngle(target_pos);
+      move(2.0);
+    }
+    else if (PS3GetBtn(SQUARE))
+    {
+      target_pos[1] =  2.80;
+      target_pos[2] =  0.43;
+      target_pos[3] = -0.56;
+      target_pos[4] = -0.37;
+
+      setJointAngle(target_pos);
+      move(2.0);
+    }    
+    else if (PS3GetBtn(CROSS))
+    {
+      target_pos[1] =  1.62;
+      target_pos[2] =  0.79;
+      target_pos[3] = -1.50;
+      target_pos[4] = -0.50;
 
       setJointAngle(target_pos);
       move(2.0);
