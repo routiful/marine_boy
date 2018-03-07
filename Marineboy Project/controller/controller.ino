@@ -1,7 +1,7 @@
 /*
 //
 //
-//  고물수레 프로젝트 v1.2
+//  고물수레 프로젝트 v1.3
 //  Artist : Marine Boy
 //  Software Engineer : Darby Lim (ROBOTIS)
 //  Hardware Engineer : Dorian Kim (ROBOTIS)
@@ -56,8 +56,8 @@
 #define TRUE          1
 #define FALSE         0
 
-#define LEFT          0
-#define RIGHT         1
+#define LEFT_M          0
+#define RIGHT_M         1
 
 #define JOY_MAX       200
 #define JOY_MIN       50
@@ -462,33 +462,40 @@ void neckJoyCtrl()
 
 void etcJoyCtrl()
 {
-  static bool cross_btn_state  = false;
-  static bool circle_btn_state = false;
+  static bool horn_btn_state = false;
+  static bool linear_forward_btn_state = false;
+  static bool linear_backward_btn_state = false;
+  static bool tv_btn_state  = false;
+  static bool image_btn_state = false;
 
-  if (PS3GetBtn(UP))
-    digitalWrite(HORN_SIG_PIN, HIGH);
-  else
+  // 한번 누르면 온, 또 누르면 오프
+  if (PS3GetBtn(UP))     {horn_btn_state             = !horn_btn_state;}
+  if (PS3GetBtn(LEFT))   {linear_forward_btn_state   = !linear_forward_btn_state;}
+  if (PS3GetBtn(RIGHT))  {linear_backward_btn_state  = !linear_backward_btn_state;}
+  if (PS3GetBtn(CROSS))  {tv_btn_state               = !tv_btn_state;}
+  if (PS3GetBtn(CIRCLE)) {image_btn_state            = !image_btn_state;}
+
+  if (horn_btn_state == false)
     digitalWrite(HORN_SIG_PIN, LOW);
-
-  if (PS3GetBtn(LEFT))
-    digitalWrite(LINEAR_FORWARD_SIG_PIN, HIGH);
   else
+    digitalWrite(HORN_SIG_PIN, HIGH);
+
+  if (linear_forward_btn_state == false)
     digitalWrite(LINEAR_FORWARD_SIG_PIN, LOW);
-
-  if (PS3GetBtn(RIGHT))
-    digitalWrite(LINEAR_BACKWARD_SIG_PIN, HIGH);
   else
+    digitalWrite(LINEAR_FORWARD_SIG_PIN, HIGH);
+
+  if (linear_backward_btn_state == false)
     digitalWrite(LINEAR_BACKWARD_SIG_PIN, LOW);
+  else
+    digitalWrite(LINEAR_BACKWARD_SIG_PIN, HIGH);
 
-  if (PS3GetBtn(CROSS)) {cross_btn_state = !cross_btn_state;}
-  if (PS3GetBtn(CIRCLE) {circle_btn_state = !circle_btn_state;}
-
-  if (cross_btn_state == false)
+  if (tv_btn_state == false)
     digitalWrite(TV_SIG_PIN, LOW);
   else
     digitalWrite(TV_SIG_PIN, HIGH);
 
-  if (circle_btn_state == false)
+  if (image_btn_state == false)
     digitalWrite(IMAGE_SIG_PIN, LOW);
   else
     digitalWrite(IMAGE_SIG_PIN, HIGH);
@@ -526,29 +533,33 @@ void WheelMove()
 {
   wheelJoyCtrl(); 
 
-  controlled_goal[LEFT] = getSimpleProfile(controlled_goal[LEFT], left_wheel_ctrl.goal, WHEEL_PROFILE_VELOCITY);
-  controlled_goal[RIGHT] = getSimpleProfile(controlled_goal[RIGHT], right_wheel_ctrl.goal, WHEEL_PROFILE_VELOCITY);
+// 모터 천천히 움직임
 
-  if (left_wheel_ctrl.goal < 0 && right_wheel_ctrl.goal > 0)
+  controlled_goal[LEFT_M] = getSimpleProfile(controlled_goal[LEFT_M], left_wheel_ctrl.goal, WHEEL_PROFILE_VELOCITY);
+  controlled_goal[RIGHT_M] = getSimpleProfile(controlled_goal[RIGHT_M], right_wheel_ctrl.goal, WHEEL_PROFILE_VELOCITY);
+
+  if (controlled_goal[LEFT_M] < 0 && controlled_goal[RIGHT_M] > 0)
   {
-    left_wheel.move((-1) * left_wheel_ctrl.goal, BACKWARD);
-    right_wheel.move(right_wheel_ctrl.goal, FORWARD);
+    left_wheel.move((-1) * controlled_goal[LEFT_M] * 0.5, BACKWARD);
+    right_wheel.move(controlled_goal[RIGHT_M] * 0.5, FORWARD);
   }
-  else if (left_wheel_ctrl.goal > 0 && right_wheel_ctrl.goal < 0)
+  else if (controlled_goal[LEFT_M] > 0 && controlled_goal[RIGHT_M] < 0)
   {
-    left_wheel.move(left_wheel_ctrl.goal, FORWARD);
-    right_wheel.move((-1) * right_wheel_ctrl.goal, BACKWARD);
+    left_wheel.move(controlled_goal[LEFT_M] * 0.5, FORWARD);
+    right_wheel.move((-1) * controlled_goal[RIGHT_M] * 0.5, BACKWARD);
   }
-  else if (left_wheel_ctrl.goal < 0 && right_wheel_ctrl.goal < 0)
+  else if (controlled_goal[LEFT_M] < 0 && controlled_goal[RIGHT_M] < 0)
   {
-    left_wheel.move((-1) * left_wheel_ctrl.goal, BACKWARD);
-    right_wheel.move((-1) * right_wheel_ctrl.goal, BACKWARD);
+    left_wheel.move((-1) * controlled_goal[LEFT_M], BACKWARD);
+    right_wheel.move((-1) * controlled_goal[RIGHT_M], BACKWARD);
   }
   else
   {
-    left_wheel.move(left_wheel_ctrl.goal, FORWARD);
-    right_wheel.move(right_wheel_ctrl.goal, FORWARD);
+    left_wheel.move(controlled_goal[LEFT_M], FORWARD);
+    right_wheel.move(controlled_goal[RIGHT_M], FORWARD);
   }
+
+// 모터 급격히 움직임
 
 //  if (left_wheel_ctrl.goal < 0 && right_wheel_ctrl.goal > 0)
 //  {
