@@ -1,7 +1,7 @@
 /*
 //
 //
-//  고물수레 프로젝트 v1.3
+//  고물수레 프로젝트 v1.4
 //  Artist : Marine Boy
 //  Software Engineer : Darby Lim (ROBOTIS)
 //  Hardware Engineer : Dorian Kim (ROBOTIS)
@@ -114,6 +114,8 @@ uint8_t control_mode = 0;
 
 bool is_connect = FALSE;
 
+bool is_rumble = FALSE;
+
 static uint64_t tTime[10];
 
 void setup() 
@@ -154,16 +156,17 @@ void loop()
       {
         select_mode++;    
         control_mode = select_mode % 3;
+        is_rumble = false;
 
         if (control_mode == CART)
         {
           PS3LedOff();
-          PS3LedOn(LED1);
+          PS3LedOn(LED1);           
         }
         else if (control_mode == GRANDMA)
         {
           PS3LedOff();
-          PS3LedOn(LED2);
+          PS3LedOn(LED2); 
         }
         else if (control_mode == ETC)
         {
@@ -171,7 +174,24 @@ void loop()
           PS3LedOn(LED3);
         }
       }
+
+      if (is_rumble != true)
+      {
+        if (control_mode == CART)
+        {
+          modeChangeSign(1, 3);     
+        }
+        else if (control_mode == GRANDMA)
+        {
+          modeChangeSign(2, 3);
+        }
+        else if (control_mode == ETC)
+        {
+          modeChangeSign(3, 3);
+        }
+      }
     }
+
     tTime[0] = t;
   }
 
@@ -188,6 +208,8 @@ void controlGrandma()
     switch(control_mode)
     {
       case CART:
+        ArmMotion();
+
         if ((t-tTime[1]) >= CART_CONTROL_PERIOD)  
         {
           CartMove();
@@ -268,6 +290,39 @@ void connectSign()
   {
     isSign = FALSE;
   }
+}
+
+void modeChangeSign(uint8_t cnt, uint8_t period)
+{
+  static uint8_t rumble_cnt = 0;
+  static uint8_t time_cnt = 0;
+
+  if (rumble_cnt < cnt)
+  {
+    if (time_cnt < period)
+    {
+      PS3Rumble(true);
+      time_cnt++;
+    }
+    else if ((time_cnt >= period) && (time_cnt < period*2))
+    {
+      PS3Rumble(false);
+      time_cnt++;
+    }
+    else
+    {
+      time_cnt = 0;
+      rumble_cnt++;
+    }  
+  }
+  else
+  {
+    PS3Rumble(false);
+    rumble_cnt = 0;
+    time_cnt = 0;
+
+    is_rumble = true;
+  }    
 }
 
 /*////////////////////////////////////////////////////
@@ -787,5 +842,57 @@ void ArmMove()
     }   
 
     tTime[3] = t;
+  }
+}
+
+void ArmMotion()
+{
+  uint32_t t = millis();
+  static float motion_pos[LINK_NUM] = {0.0, };
+
+  if ((t-tTime[5]) >= (1000 / ARM_CONTROL_PERIOD))
+  {
+    if (PS3GetBtn(TRIANGLE))
+    {
+      motion_pos[1] =  1.07;
+      motion_pos[2] =  0.52;
+      motion_pos[3] = -0.51;
+      motion_pos[4] =  0.63;
+
+      setJointAngle(motion_pos);
+      move(2.0);
+    }
+    else if (PS3GetBtn(CROSS))
+    {
+      motion_pos[1] =  0.02;
+      motion_pos[2] =  0.18;
+      motion_pos[3] = -0.21;
+      motion_pos[4] = -0.52;
+
+      setJointAngle(motion_pos);
+      move(2.0);
+    }
+    else if (PS3GetBtn(CIRCLE))
+    {
+      motion_pos[1] =  1.52;
+      motion_pos[2] =  0.41;
+      motion_pos[3] =  0.35;
+      motion_pos[4] =  1.05;
+
+      setJointAngle(motion_pos);
+      move(2.0);
+    }
+    else if (PS3GetBtn(SQUARE))
+    {
+      motion_pos[1] =  2.21;
+      motion_pos[2] =  0.06;
+      motion_pos[3] = -0.70;
+      motion_pos[4] = -0.36;
+
+      setJointAngle(motion_pos);
+      move(2.0);
+    }   
+
+    tTime[5] = t;
   }
 }
