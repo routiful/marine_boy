@@ -22,8 +22,8 @@
 //#define DEBUG 
 ////////////////////////////////////////////////////////////////////////
 
-#define SET_WRIST_MIN_ANGLE -50
-#define SET_WRIST_MAX_ANGLE 50
+#define SET_WRIST_MIN_ANGLE -60
+#define SET_WRIST_MAX_ANGLE 60
 // 죄측 -50 , 우측 30 몸통회전 각도 
 #define NECK_VEL 20
 #define NECK_ACC 100
@@ -70,8 +70,8 @@
 #define ETC_CONTROL_PERIOD  50  //50ms
 
 #define WHEEL_PROFILE_VELOCITY 2
-#define LEG_PROFILE_VELOCITY 2
-
+#define LEG_PROFILE_VELOCITY 4
+// 벨로시티 여윤 
 #define MOTOR_FREQ 200
 
 #define	MAX(x,y) ((x) > (y) ? (x) : (y))	
@@ -284,21 +284,21 @@ void wheelCtrlInit()
   left_wheel_ctrl.limit.maximum = 2000;
   left_wheel_ctrl.limit.minimum = -2000;
 }
-
+// 0에서 2000까지 속도 변환 가능 
 void legCtrlInit()
 {
   leg_ctrl.goal = 0;
-  leg_ctrl.limit.maximum = 590;
-  leg_ctrl.limit.minimum = -590;
+  leg_ctrl.limit.maximum = 2000;
+  leg_ctrl.limit.minimum = -2000;
 }
-
+// 0에서 2000까지 속도 변환 가능 
 void wristCtrlInit()
 {
   wrist_ctrl.goal = 90;
-  wrist_ctrl.limit.maximum = 135;
-  wrist_ctrl.limit.minimum = 45;
+  wrist_ctrl.limit.maximum = 91;
+  wrist_ctrl.limit.minimum = 89;
 }
-
+// 허리 각도 변환 goal은 초기각도 , 맥시멈 135도 , 미니멈 45도 총 90도 이동 // 실험해 보니 이값은 조정값이 아님 25,26줄 값 수정
 void neckCtrlInit()
 {
   neck_ctrl.roll.goal           = CENTER_POSTIION;
@@ -360,6 +360,8 @@ void ETCBegin()
   pinMode(LINEAR_BACKWARD_SIG_PIN, OUTPUT);
   pinMode(TV_SIG_PIN, OUTPUT);
   pinMode(IMAGE_SIG_PIN, OUTPUT);
+  digitalWrite(HORN_SIG_PIN, HIGH);
+  
 }
 
 /*////////////////////////////////////////////////////
@@ -398,8 +400,8 @@ void wheelJoyCtrl()
   float lin_vel = (float)(get_y_hat);
   float ang_vel = (float)(get_x_hat);
 
-  left_wheel_ctrl.goal  = (lin_vel - (ang_vel * 0.750 / 2)) * 16;
-  right_wheel_ctrl.goal = (lin_vel + (ang_vel * 0.750 / 2)) * 16;
+  left_wheel_ctrl.goal  = (lin_vel - (ang_vel * 0.750 / 2)) * 11;
+  right_wheel_ctrl.goal = (lin_vel + (ang_vel * 0.750 / 2)) * 11;
 
   left_wheel_ctrl.goal = constrain(left_wheel_ctrl.goal, left_wheel_ctrl.limit.minimum, left_wheel_ctrl.limit.maximum);
   right_wheel_ctrl.goal = constrain(right_wheel_ctrl.goal, right_wheel_ctrl.limit.minimum, right_wheel_ctrl.limit.maximum);
@@ -409,7 +411,7 @@ void legJoyCtrl()
 {
   int8_t get_y_hat = map(PS3GetJoy(LeftHatY), 0, 255, 127, -127);
 
-  leg_ctrl.goal = get_y_hat * 16;
+  leg_ctrl.goal = get_y_hat * 7;
 
   leg_ctrl.goal = constrain(leg_ctrl.goal, leg_ctrl.limit.minimum, leg_ctrl.limit.maximum);
 }
@@ -476,9 +478,9 @@ void etcJoyCtrl()
   if (PS3GetBtn(CIRCLE)) {image_btn_state            = !image_btn_state;}
 
   if (horn_btn_state == false)
-    digitalWrite(HORN_SIG_PIN, LOW);
-  else
     digitalWrite(HORN_SIG_PIN, HIGH);
+  else
+    digitalWrite(HORN_SIG_PIN, LOW);
 
   if (linear_forward_btn_state == false)
     digitalWrite(LINEAR_FORWARD_SIG_PIN, LOW);
@@ -533,7 +535,7 @@ void WheelMove()
 {
   wheelJoyCtrl(); 
 
-// 모터 천천히 움직임
+// 모터 천천히 움직임 [ ] * 0.1~0.9 등등으로 변경하면 가속도 증가 - 천천히 속도 올라감 // 최고속도도 영향있음 
 
   controlled_goal[LEFT_M] = getSimpleProfile(controlled_goal[LEFT_M], left_wheel_ctrl.goal, WHEEL_PROFILE_VELOCITY);
   controlled_goal[RIGHT_M] = getSimpleProfile(controlled_goal[RIGHT_M], right_wheel_ctrl.goal, WHEEL_PROFILE_VELOCITY);
@@ -545,18 +547,18 @@ void WheelMove()
   }
   else if (controlled_goal[LEFT_M] > 0 && controlled_goal[RIGHT_M] < 0)
   {
-    left_wheel.move(controlled_goal[LEFT_M] * 0.5, FORWARD);
-    right_wheel.move((-1) * controlled_goal[RIGHT_M] * 0.5, BACKWARD);
+    left_wheel.move(controlled_goal[LEFT_M] * 1, FORWARD);
+    right_wheel.move((-1) * controlled_goal[RIGHT_M] * 1, BACKWARD);
   }
   else if (controlled_goal[LEFT_M] < 0 && controlled_goal[RIGHT_M] < 0)
   {
-    left_wheel.move((-1) * controlled_goal[LEFT_M], BACKWARD);
-    right_wheel.move((-1) * controlled_goal[RIGHT_M], BACKWARD);
+    left_wheel.move((-1) * controlled_goal[LEFT_M] * 0.9, BACKWARD);
+    right_wheel.move((-1) * controlled_goal[RIGHT_M] * 0.9, BACKWARD);
   }
   else
   {
-    left_wheel.move(controlled_goal[LEFT_M], FORWARD);
-    right_wheel.move(controlled_goal[RIGHT_M], FORWARD);
+    left_wheel.move(controlled_goal[LEFT_M] * 1, FORWARD);
+    right_wheel.move(controlled_goal[RIGHT_M] * 1, FORWARD);
   }
 
 // 모터 급격히 움직임
@@ -745,54 +747,44 @@ void ArmMove()
     // Add Arm Motion
     else if (PS3GetBtn(TRIANGLE))
     {
-      target_pos[1] =  0.0;
-      target_pos[2] =  0.0;
-      target_pos[3] =  0.0;
-      target_pos[4] =  0.0;
+      target_pos[1] =  1.07;
+      target_pos[2] =  0.52;
+      target_pos[3] = -0.51;
+      target_pos[4] =  0.63;
 
       setJointAngle(target_pos);
       move(2.0);
     }
     else if (PS3GetBtn(CROSS))
     {
-      target_pos[1] =  1.62;
-      target_pos[2] =  0.79;
-      target_pos[3] = -1.50;
-      target_pos[4] = -0.50;
+      target_pos[1] =  0.02;
+      target_pos[2] =  0.18;
+      target_pos[3] = -0.21;
+      target_pos[4] = -0.52;
 
       setJointAngle(target_pos);
       move(2.0);
     }
     else if (PS3GetBtn(CIRCLE))
     {
-      target_pos[1] =  1.44;
-      target_pos[2] =  1.43;
-      target_pos[3] = -0.33;
-      target_pos[4] = -0.23;
+      target_pos[1] =  1.52;
+      target_pos[2] =  0.41;
+      target_pos[3] =  0.35;
+      target_pos[4] =  1.05;
 
       setJointAngle(target_pos);
       move(2.0);
     }
     else if (PS3GetBtn(SQUARE))
     {
-      target_pos[1] =  2.80;
-      target_pos[2] =  0.43;
-      target_pos[3] = -0.56;
-      target_pos[4] = -0.37;
+      target_pos[1] =  2.21;
+      target_pos[2] =  0.06;
+      target_pos[3] = -0.70;
+      target_pos[4] = -0.36;
 
       setJointAngle(target_pos);
       move(2.0);
-    }    
-    else if (PS3GetBtn(CROSS))
-    {
-      target_pos[1] =  1.62;
-      target_pos[2] =  0.79;
-      target_pos[3] = -1.50;
-      target_pos[4] = -0.50;
-
-      setJointAngle(target_pos);
-      move(2.0);
-    }
+    }   
 
     tTime[3] = t;
   }
